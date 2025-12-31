@@ -152,7 +152,10 @@ def preprocess(symbol="DOT-USDT-SWAP", limit=300, bar="1H"):
 #/content/drive/MyDrive/Scalers/scaler_X_1H_live.pkl
 
 
+
+
 def live_tensor(df, scaler_path="/home/ubuntu/livebot/scaler_X_1H.pkl"):
+
     features = ["close", "price_change", "vwap", "ret_1", "ret_5",
                 "ma_5", "ma_10", "rsi_14", "vol_10", "atr_norm"]
 
@@ -213,7 +216,7 @@ model = GRUModel(input_size = 10)
 
 
 model.load_state_dict(
-    torch.load("/home/ubuntu/livebot/0.503_acc_60.pth", map_location="cpu"),
+    torch.load("/home/ubuntu/livebot/0.503_acc_60.pth", map_location="cpu"), 
     strict=False
 )
 # model.load_state_dict(
@@ -725,7 +728,9 @@ DAILY_LOSS_LIMIT = 0.03
 last_weekly_report = None
 last_prediction = None
 
+
 STATE_FILE = "/home/ubuntu/livebot/state.json"
+
 
 import os, json, tempfile
 
