@@ -7,8 +7,8 @@ Original file is located at
     https://colab.research.google.com/drive/19nJsvI_oaT_vE9VuPDcbwWnTxzoS2COy
 """
 
-!pip install ta
-!pip install python-okx
+#!pip install ta
+#!pip install python-okx
 
 # For My Mum — love you always and forever ❤️
 
