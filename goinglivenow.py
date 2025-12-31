@@ -961,7 +961,3 @@ while True:
         print("Loop error:", e)
         time.sleep(5)
 
-s = {'default': 'Def'}
-loaded_s = {'default': 'new'}
-s = {**s, **loaded_s}
-s
