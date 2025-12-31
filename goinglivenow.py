@@ -933,6 +933,7 @@ else:
 
 while True:
     try:
+        print("working")
         now = datetime.utcnow()
         today = now.date()
 
