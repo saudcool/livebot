@@ -903,6 +903,7 @@ def fsm_flat(state, market):
 def fsm_step(state, market):
     fsm = state["fsm_state"]
     print("FSM:", state["fsm_state"])
+    print("sane")
     if fsm == FSM_FLAT:
         fsm_flat(state, market)
 
