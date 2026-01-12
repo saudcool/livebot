@@ -21,6 +21,7 @@ import torch
 import numpy as np
 from torch import nn
 import ta
+from ta.trend import ADXIndicator
 import joblib
 from torch.utils.data import DataLoader, TensorDataset
 from sklearn.preprocessing import StandardScaler
@@ -70,7 +71,7 @@ def preprocess(symbol="DOT-USDT-SWAP", limit=300, bar="1H"):
         "bar": bar,
         "limit": str(limit)
     }
-
+    global close, high, low
     try:
         r = safe_get(url, params=params, timeout=10)
     except Exception as e:
@@ -124,8 +125,8 @@ def preprocess(symbol="DOT-USDT-SWAP", limit=300, bar="1H"):
     df['vwap'] = (df['typical_price'] * df['volume']).cumsum() / df['volume'].cumsum()
 
     # FUTURE label: close 10 candles ahead (change -10). You had shift(-50) earlier; using -10 consistent with name
-    df["close_t+10"] = df['close'].shift(-10)
-    df['close_change_t+10'] = (df['close_t+10'] - df['close']) / df['close']
+    # df["close_t+10"] = df['close'].shift(-10)
+    # df['close_change_t+10'] = (df['close_t+10'] - df['close']) / df['close']
 
     df["ret_1"] = df["close"].pct_change(1).fillna(0)
     df["ret_5"] = df["close"].pct_change(5).fillna(0)
@@ -133,6 +134,8 @@ def preprocess(symbol="DOT-USDT-SWAP", limit=300, bar="1H"):
     df["ma_10"] = df["close"].rolling(10).mean().fillna(method='bfill')
     df["rsi_14"] = ta.momentum.RSIIndicator(df["close"], window=14).rsi().fillna(0)
     df["vol_10"] = df["close"].rolling(10).std().fillna(0)
+
+
 
     df['tr'] = np.maximum(df['high'] - df['low'],
                          np.maximum(abs(df['high'] - df['close'].shift()),
@@ -149,10 +152,94 @@ def preprocess(symbol="DOT-USDT-SWAP", limit=300, bar="1H"):
 
     return df, df['atr_tv']
 
+
+
+def adx(symbol="DOT-USDT-SWAP", limit=300, bar="1H"):
+    """
+    Returns: df (processed), atr_series (ewm atr)
+    """
+    url = "https://www.okx.com/api/v5/market/candles"
+    params = {
+        "instId": symbol,
+        "bar": bar,
+        "limit": str(limit)
+    }
+    global close, high, low
+    try:
+        r = safe_get(url, params=params, timeout=10)
+    except Exception as e:
+        print(f"[ERROR] Failed to fetch candles: {e}")
+        return pd.DataFrame(), pd.Series(dtype=float)
+
+    try:
+        payload = r.json()
+    except ValueError as e:
+        print("[ERROR] Response JSON decode failed:", e)
+        return pd.DataFrame(), pd.Series(dtype=float)
+
+    if 'data' not in payload:
+        print("[ERROR] Unexpected API response, 'data' missing.")
+        return pd.DataFrame(), pd.Series(dtype=float)
+
+    data = payload['data']
+    if not data:
+        print("[WARN] OKX returned empty data.")
+        return pd.DataFrame(), pd.Series(dtype=float)
+
+    # Columns: [ts, o, h, l, c, vol, volCcy, volCcyQuote, confirm]
+    df = pd.DataFrame(data, columns=[
+        "ts","open","high","low","close","volume","volCcy","volCcyQuote","confirm"
+    ])
+
+    # Some APIs return string timestamps; OKX can return ISO or ms — we assume ms if numeric
+    try:
+        # if ts looks numeric (ms), convert
+        if df['ts'].dtype == object and df['ts'].str.isnumeric().all():
+            df["ts"] = pd.to_datetime(df["ts"].astype(int), unit="ms")
+        else:
+            df["ts"] = pd.to_datetime(df["ts"])
+    except Exception:
+        # fallback to generic parse
+        df["ts"] = pd.to_datetime(df["ts"], errors='coerce')
+
+    df = df.astype({
+        "open": float, "high": float, "low": float, "close": float, "volume": float
+    }, errors='ignore')
+
+    # feature engineering
+    df = df.sort_values("ts").reset_index(drop=True)
+
+    adx = ADXIndicator(
+    high=df["high"],
+    low=df["low"],
+    close=df["close"],
+    window=14
+)
+
+    df["adx_14"] = adx.adx().fillna(0)
+    df["di_plus"] = adx.adx_pos().fillna(0)
+    df["di_minus"] = adx.adx_neg().fillna(0)
+
+
+    df['tr'] = np.maximum(df['high'] - df['low'],
+                         np.maximum(abs(df['high'] - df['close'].shift()),
+                                    abs(df['low'] - df['close'].shift())))
+    df['atr'] = df['tr'].rolling(window=14).mean()
+    df["atr_norm"] = df["atr"] / df["close"].replace(0, np.nan)
+    df['atr_tv'] = df['tr'].ewm(alpha=1/14, adjust=False).mean()
+
+    # Drop rows with NaN that matter (e.g., missing indicators)
+    df = df.dropna().reset_index(drop=True)
+
+    if df.empty:
+        return pd.DataFrame(), pd.Series(dtype=float)
+
+    return df["adx_14"].iloc[-1], df["di_plus"].iloc[-1], df["di_minus"].iloc[-1]
+
 #/content/drive/MyDrive/Scalers/scaler_X_1H_live.pkl
 
 
-def live_tensor(df, scaler_path="/home/ubuntu/livebot/scaler_X_1H.pkl"):
+def live_tensor(df, scaler_path="/home/saud/livebot/scaler_X_1H.pkl"):
     features = ["close", "price_change", "vwap", "ret_1", "ret_5",
                 "ma_5", "ma_10", "rsi_14", "vol_10", "atr_norm"]
 
@@ -213,7 +300,7 @@ model = GRUModel(input_size = 10)
 
 
 model.load_state_dict(
-    torch.load("/home/ubuntu/livebot/0.503_acc_60.pth", map_location="cpu"),
+    torch.load("/home/saud/livebot/0.503_acc_60.pth", map_location="cpu"),
     strict=False
 )
 # model.load_state_dict(
@@ -725,7 +812,7 @@ DAILY_LOSS_LIMIT = 0.03
 last_weekly_report = None
 last_prediction = None
 
-STATE_FILE = "/home/ubuntu/livebot/state.json"
+STATE_FILE = "/home/saud/livebot/state.json"
 
 import os, json, tempfile
 
@@ -839,6 +926,19 @@ def fsm_in_trade(state, market):
 def fsm_flat(state, market):
     now = market["now"]
 
+    #ADX Logic
+    adx, di_plus, di_minus = adx()
+    if adx is None:
+        return
+
+    if di_plus is None or di_minus is None:
+        return
+    market_ok = adx >= 20
+
+    long_allowed = (market_ok and di_plus > di_minus)
+    short_allowed = (market_ok and di_minus > di_plus)
+
+
     # safety: if something desynced
     if state["position_open"] == True:
         state["fsm_state"] = FSM_IN_TRADE
@@ -846,7 +946,7 @@ def fsm_flat(state, market):
 
     # daily limits
     if state["daily_trades"] >= MAX_TRADES_PER_DAY or state["daily_loss"] >= DAILY_LOSS_LIMIT:
-      print(f"[WARN] Daily limit reached: {MAX_TRADES_PER_DAY}")
+      print(f"[WARN] Daily limit reached")
       return
 
     prediction = market["prediction"]
@@ -863,9 +963,9 @@ def fsm_flat(state, market):
 
     # decide side
 
-    if prediction == 1:
+    if prediction == 1 and long_allowed:
         side = "buy"
-    elif prediction == 0:
+    elif prediction == 0 and short_allowed:
         side = "sell"
     else:
         print(f"[WARN] Neutral prediction: {prediction}")
