@@ -71,7 +71,7 @@ def preprocess(symbol="DOT-USDT-SWAP", limit=300, bar="1H"):
         "bar": bar,
         "limit": str(limit)
     }
-    global close, high, low
+
     try:
         r = safe_get(url, params=params, timeout=10)
     except Exception as e:
@@ -125,8 +125,8 @@ def preprocess(symbol="DOT-USDT-SWAP", limit=300, bar="1H"):
     df['vwap'] = (df['typical_price'] * df['volume']).cumsum() / df['volume'].cumsum()
 
     # FUTURE label: close 10 candles ahead (change -10). You had shift(-50) earlier; using -10 consistent with name
-    # df["close_t+10"] = df['close'].shift(-10)
-    # df['close_change_t+10'] = (df['close_t+10'] - df['close']) / df['close']
+    df["close_t+10"] = df['close'].shift(-10)
+    df['close_change_t+10'] = (df['close_t+10'] - df['close']) / df['close']
 
     df["ret_1"] = df["close"].pct_change(1).fillna(0)
     df["ret_5"] = df["close"].pct_change(5).fillna(0)
@@ -134,8 +134,6 @@ def preprocess(symbol="DOT-USDT-SWAP", limit=300, bar="1H"):
     df["ma_10"] = df["close"].rolling(10).mean().fillna(method='bfill')
     df["rsi_14"] = ta.momentum.RSIIndicator(df["close"], window=14).rsi().fillna(0)
     df["vol_10"] = df["close"].rolling(10).std().fillna(0)
-
-
 
     df['tr'] = np.maximum(df['high'] - df['low'],
                          np.maximum(abs(df['high'] - df['close'].shift()),
@@ -151,8 +149,6 @@ def preprocess(symbol="DOT-USDT-SWAP", limit=300, bar="1H"):
         return pd.DataFrame(), pd.Series(dtype=float)
 
     return df, df['atr_tv']
-
-
 
 def adx(symbol="DOT-USDT-SWAP", limit=300, bar="1H"):
     """
@@ -208,7 +204,7 @@ def adx(symbol="DOT-USDT-SWAP", limit=300, bar="1H"):
 
     # feature engineering
     df = df.sort_values("ts").reset_index(drop=True)
-
+    
     adx = ADXIndicator(
     high=df["high"],
     low=df["low"],
@@ -235,6 +231,7 @@ def adx(symbol="DOT-USDT-SWAP", limit=300, bar="1H"):
         return pd.DataFrame(), pd.Series(dtype=float)
 
     return df["adx_14"].iloc[-1], df["di_plus"].iloc[-1], df["di_minus"].iloc[-1]
+
 
 #/content/drive/MyDrive/Scalers/scaler_X_1H_live.pkl
 
@@ -925,20 +922,19 @@ def fsm_in_trade(state, market):
 #__________________________________________________________________________________________________
 def fsm_flat(state, market):
     now = market["now"]
-
+    
     #ADX Logic
     adx, di_plus, di_minus = adx()
     if adx is None:
         return
-
+    
     if di_plus is None or di_minus is None:
         return
     market_ok = adx >= 20
-
+    
     long_allowed = (market_ok and di_plus > di_minus)
     short_allowed = (market_ok and di_minus > di_plus)
-
-
+    
     # safety: if something desynced
     if state["position_open"] == True:
         state["fsm_state"] = FSM_IN_TRADE
@@ -946,7 +942,7 @@ def fsm_flat(state, market):
 
     # daily limits
     if state["daily_trades"] >= MAX_TRADES_PER_DAY or state["daily_loss"] >= DAILY_LOSS_LIMIT:
-      print(f"[WARN] Daily limit reached")
+      print(f"[WARN] Daily limit reached: {MAX_TRADES_PER_DAY}")
       return
 
     prediction = market["prediction"]
