@@ -152,8 +152,6 @@ def preprocess(symbol="DOT-USDT-SWAP", limit=300, bar="1H"):
 
     return df, df['atr_tv']
 
-
-
 def adx(symbol="DOT-USDT-SWAP", limit=300, bar="1H"):
     """
     Returns: df (processed), atr_series (ewm atr)
@@ -236,7 +234,7 @@ def adx(symbol="DOT-USDT-SWAP", limit=300, bar="1H"):
 
     return df["adx_14"].iloc[-1], df["di_plus"].iloc[-1], df["di_minus"].iloc[-1]
 
-#/content/drive/MyDrive/Scalers/scaler_X_1H_live.pkl
+# /content/drive/MyDrive/Scalers/scaler_X_1H_live.pkl
 
 
 def live_tensor(df, scaler_path="/home/ubuntu/livebot/scaler_X_1H.pkl"):
@@ -933,7 +931,7 @@ def fsm_in_trade(state, market):
 def fsm_flat(state, market):
     now = market["now"]
 
-    market_ok = market["adx"] >= 20
+    market_ok = market["adx"] >= 22
 
     long_allowed = (market_ok and market["di_plus"] > market["di_minus"])
     short_allowed = (market_ok and market["di_minus"] > market["di_plus"])
@@ -951,9 +949,9 @@ def fsm_flat(state, market):
       print(f"[WARN] Daily limit reached")
       return
 
-    prediction = market["prediction"]
-    if prediction is None:
-        return
+    # prediction = market["prediction"]
+    # if prediction is None:
+    #     return
 
 
     if not market["candle_close"]:
@@ -965,13 +963,13 @@ def fsm_flat(state, market):
 
     # decide side
 
-    if prediction == 1 and long_allowed:
+    if long_allowed:
         side = "buy"
-    elif prediction == 0 and short_allowed:
+    elif short_allowed:
         side = "sell"
-    else:
-        print(f"[WARN] Neutral prediction: {prediction}")
-        return
+    # else:
+    #     print(f"[WARN] Neutral prediction: {prediction}")
+    #     return
 
     # execute entry
     trade = place_paper_trade(side)
