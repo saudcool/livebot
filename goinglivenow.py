@@ -674,8 +674,8 @@ def SL_short(side = "buy"):
 def calculate_sl_tp(state, atr_value):
     if atr_value is None:
         return None, None
-    sl_pct = min(atr_value, 0.01)  # max 1% SL in volatile conditions
-    tp_pct = 3 * sl_pct             # RRR = 3:1
+    sl_pct = atr_value
+    tp_pct = 3 * sl_pct     # RRR = 3:1
     try:
       if state["side"] == 'buy':
           sl, tp =state["entry_price"]*(1-sl_pct),state["entry_price"]*(1+tp_pct)
@@ -1055,3 +1055,5 @@ while True:
     except Exception as e:
         print("Loop error:", e)
         time.sleep(5)
+
+adx()
