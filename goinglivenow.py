@@ -477,7 +477,7 @@ def place_paper_trade(side):
             tdMode='isolated',
             side= side,
             ordType='market',
-            sz='22'
+            sz='25'
         )
 
         print(f"[INFO] Order sent: {side}")
@@ -571,7 +571,7 @@ def TP_long(side = "sell"):
             tdMode='isolated',
             side=side,
             ordType='market',
-            sz='22',
+            sz='25',
             reduceOnly=True
         )
         print("[INFO] TP order sent")
@@ -597,7 +597,7 @@ def SL_long(side = "sell"):
             tdMode='isolated',
             side=side,
             ordType='market',
-            sz='22',
+            sz='25',
             reduceOnly=True
         )
         print("[INFO] SL order sent")
@@ -623,7 +623,7 @@ def TP_short(side = "buy"):
             tdMode='isolated',
             side=side,
             ordType='market',
-            sz='22',
+            sz='25',
             reduceOnly=True
         )
         print("[INFO] TP order sent")
@@ -649,7 +649,7 @@ def SL_short(side = "buy"):
             tdMode='isolated',
             side=side,
             ordType='market',
-            sz='22',
+            sz='25',
             reduceOnly=True
         )
         print("[INFO] SL order sent")
@@ -765,7 +765,7 @@ def check_close_condition(current_price, state, atr_value):
 
         elif market['di_plus'] > market['di_minus']:
             SL_short()
-            pnl = (sl -state["entry_price"])/state["entry_price"]
+            pnl = (sl - state["entry_price"])/state["entry_price"]
             pnl_log.loc[len(pnl_log)] = [datetime.utcnow(), state["side"],state["entry_price"], sl, pnl]
             state["daily_loss"] += max(0,-pnl)
             save_pnl_log()
@@ -1078,5 +1078,3 @@ while True:
     except Exception as e:
         print("Loop error:", e)
         time.sleep(5)
-
-adx()
