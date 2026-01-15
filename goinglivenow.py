@@ -7,8 +7,8 @@ Original file is located at
     https://colab.research.google.com/drive/19nJsvI_oaT_vE9VuPDcbwWnTxzoS2COy
 """
 
-# !pip install ta
-# !pip install python-okx
+#!pip install ta
+#!pip install python-okx
 
 # For My Mum — love you always and forever ❤️
 
@@ -494,6 +494,29 @@ def place_paper_trade(side):
             print("[ERROR] Position does NOT exist — order likely failed")
             return False
 
+
+
+def get_exit_price(retries = 3, delay = 1):
+    flag = "0"
+    for attempt in range(retries):
+      try:
+          tradeAPI = Trade.TradeAPI(api_key, api_secret, passphrase, flag='0')
+          result = tradeAPI.get_fills(instType = "SWAP")
+          positions = result.get('data', [])
+          if not positions:
+              return None
+          exitPx = positions[0].get('fillPx', None)
+          if exitPx is None:
+              return None
+          return float(exitPx)
+          print(f"[SUCCESS] Entry price fetched.")
+      except Exception as e:
+          print("[ERROR] get_entry_price failed (attempt {attempt+1}):", e)
+          time.sleep(delay)
+
+      print("[ERROR] All retries failed — returning None")
+      return None
+
 # Email
 sender_email = "mashoordada@gmail.com"
 receiver_email = "saudrehan73@gmail.com"  # can be phone via carrier SMS-to-email
@@ -733,7 +756,11 @@ def check_close_condition(current_price, state, atr_value):
 
         elif market['di_minus'] > market['di_plus']:
             SL_long()
-            pnl = (sl -state["entry_price"])/state["entry_price"]
+            time.sleep(1)
+            state["exit_price"] = get_exit_price()
+            if state["exit_price"] is None:
+                return False
+            pnl = (state["exit_price"] -state["entry_price"])/state["entry_price"]
             pnl_log.loc[len(pnl_log)] = [datetime.utcnow(), state["side"],state["entry_price"], sl, pnl]
             state["daily_loss"] += max(0,-pnl)
             save_pnl_log()
@@ -765,7 +792,11 @@ def check_close_condition(current_price, state, atr_value):
 
         elif market['di_plus'] > market['di_minus']:
             SL_short()
-            pnl = (sl - state["entry_price"])/state["entry_price"]
+            time.sleep(1)
+            state["exit_price"] = get_exit_price()
+            if state["exit_price"] is None:
+                return False
+            pnl = (state["exit_price"] - state["entry_price"])/state["entry_price"]
             pnl_log.loc[len(pnl_log)] = [datetime.utcnow(), state["side"],state["entry_price"], sl, pnl]
             state["daily_loss"] += max(0,-pnl)
             save_pnl_log()
@@ -804,6 +835,7 @@ state = {
     "position_open": False,
     "side": None,
     "entry_price": None,
+    "exit_price": None,
     "last_entry_candle": None,
     "daily_trades": 0,
     "daily_loss": 0.0,
@@ -938,6 +970,7 @@ def fsm_in_trade(state, market):
         atr
     )
 
+
     if position_exists():
       return
 
@@ -947,6 +980,7 @@ def fsm_in_trade(state, market):
     # trade closed
     state["position_open"] = False
     state["entry_price"] = None
+
 
     state["fsm_state"] = FSM_COOLDOWN
 
@@ -1008,7 +1042,7 @@ def fsm_flat(state, market):
     state["last_trade_side"] = side
     state["daily_trades"] += 1
     state["fsm_state"] = FSM_IN_TRADE
-
+    state["exit_price"] = None
     state["last_entry_candle"] = candle_id
 
     print(f"[ENTRY] {side.upper()} @ {entry_price}, [Trades] {state['daily_trades']}")
