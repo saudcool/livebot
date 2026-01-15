@@ -703,7 +703,7 @@ def check_close_condition(current_price, state, atr_value):
       return False
 
     sl, tp = calculate_sl_tp(state, atr_value)
-
+    market = build_market_context()
     global pnl_log
     if tp is None or sl is None:
       print(f"[WARN] TP or SL is None ")
@@ -730,6 +730,18 @@ def check_close_condition(current_price, state, atr_value):
             state["last_trade_side"] = state["side"]
             save_state(state)
             return True
+
+        elif market['di_minus'] > market['di_plus']:
+            SL_long()
+            pnl = (sl -state["entry_price"])/state["entry_price"]
+            pnl_log.loc[len(pnl_log)] = [datetime.utcnow(), state["side"],state["entry_price"], sl, pnl]
+            state["daily_loss"] += max(0,-pnl)
+            save_pnl_log()
+            state["last_loss_time"] = datetime.utcnow()
+            state["last_trade_side"] = state["side"]
+            save_state(state)
+            return True
+
     elif state["side"]== "sell":
         if current_price <= tp:
             TP_short()
@@ -744,6 +756,17 @@ def check_close_condition(current_price, state, atr_value):
             SL_short()
             pnl = (state["entry_price"] - sl)/state["entry_price"]
             pnl_log.loc[len(pnl_log)] = [datetime.utcnow(), state["side"], state["entry_price"], sl, pnl]
+            state["daily_loss"] += max(0,-pnl)
+            save_pnl_log()
+            state["last_loss_time"] = datetime.utcnow()
+            state["last_trade_side"] = state["side"]
+            save_state(state)
+            return True
+
+        elif market['di_plus'] > market['di_minus']:
+            SL_short()
+            pnl = (sl -state["entry_price"])/state["entry_price"]
+            pnl_log.loc[len(pnl_log)] = [datetime.utcnow(), state["side"],state["entry_price"], sl, pnl]
             state["daily_loss"] += max(0,-pnl)
             save_pnl_log()
             state["last_loss_time"] = datetime.utcnow()
@@ -806,7 +829,7 @@ MAX_TRADES_PER_DAY = 6
 SEQ_LEN = 60
 WIN_COOLDOWN_HOURS = 1
 LOSS_COOLDOWN_HOURS = 4
-DAILY_LOSS_LIMIT = 0.01
+DAILY_LOSS_LIMIT = 0.04
 last_weekly_report = None
 last_prediction = None
 
