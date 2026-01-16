@@ -7,8 +7,8 @@ Original file is located at
     https://colab.research.google.com/drive/19nJsvI_oaT_vE9VuPDcbwWnTxzoS2COy
 """
 
-#!pip install ta
-#!pip install python-okx
+!pip install ta
+!pip install python-okx
 
 # For My Mum — love you always and forever ❤️
 
@@ -762,13 +762,15 @@ def check_close_condition(current_price, state, atr_value):
                 return False
             if state["exit_price"] >= state["entry_price"]:
               state["last_win_time"] = datetime.utcnow()
+              pnl = (state["exit_price"] - state["entry_price"])/state["entry_price"]
             else:
               state["last_loss_time"] = datetime.utcnow()
-            pnl = (state["exit_price"] -state["entry_price"])/state["entry_price"]
+              pnl = (state["entry_price"] - state["exit_price"])/state["entry_price"]
+
             pnl_log.loc[len(pnl_log)] = [datetime.utcnow(), state["side"],state["entry_price"], sl, pnl]
             state["daily_loss"] += max(0,-pnl)
             save_pnl_log()
-            state["last_loss_time"] = datetime.utcnow()
+            # state["last_loss_time"] = datetime.utcnow()
             state["last_trade_side"] = state["side"]
             save_state(state)
             return True
@@ -802,9 +804,11 @@ def check_close_condition(current_price, state, atr_value):
                 return False
             if state["exit_price"] <= state["entry_price"]:
               state["last_win_time"] = datetime.utcnow()
+              pnl = (state["entry_price"] - state["exit_price"])/state["entry_price"]
             else:
               state["last_loss_time"] = datetime.utcnow()
-            pnl = (state["exit_price"] - state["entry_price"])/state["entry_price"]
+              pnl = (state["exit_price"] - state["entry_price"])/state["entry_price"]
+
             pnl_log.loc[len(pnl_log)] = [datetime.utcnow(), state["side"],state["entry_price"], sl, pnl]
             state["daily_loss"] += max(0,-pnl)
             save_pnl_log()
