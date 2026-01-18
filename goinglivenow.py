@@ -1090,13 +1090,29 @@ loaded_state = load_state()
 
 if loaded_state:
     state = {**state, **loaded_state}
+    datetime_fields = ["last_loss_time", "last_win_time", "last_entry_candle"]
     # Convert date string back to date
-    for key in ["last_loss_time", "last_win_time", "last_entry_candle"]:
+    for key in datetime_fields:
         if key in state and isinstance(state[key], str):
-            state[key] = datetime.strptime(state[key], "%Y-%m-%d %H:%M:%S")
-    for key in ["last_reset_date"]:
-        if key in state and isinstance(state[key], str):
-            state[key] = datetime.strptime(state[key], "%Y-%m-%d")
+            try:
+                # Try different formats
+                if key == "last_reset_date":
+                    # Date only
+                    state[key] = datetime.strptime(state[key], "%Y-%m-%d").date()
+                else:
+                    # Datetime - try with microseconds first
+                    if '.' in state[key]:
+                        # Has microseconds: 2025-01-18 20:59:45.123456
+                        state[key] = datetime.strptime(state[key].split('.')[0], "%Y-%m-%d %H:%M:%S")
+                    else:
+                        state[key] = datetime.strptime(state[key], "%Y-%m-%d %H:%M:%S")
+            except ValueError as e:
+                print(f"Warning: Could not parse {key}='{state[key]}': {e}")
+                # Set to None or a default value
+                if key == "last_reset_date":
+                    state[key] = datetime.utcnow().date()
+                else:
+                    state[key] = None
 else:
     state = state
 
