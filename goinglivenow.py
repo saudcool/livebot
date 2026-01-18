@@ -698,7 +698,7 @@ def calculate_sl_tp(state, atr_value):
     if atr_value is None:
         return None, None
     sl_pct = atr_value
-    if atr_value >= 0.025
+    if atr_value >= 0.025:
       tp_pct = 2 * sl_pct
     else:
       tp_pct = 3 * sl_pct
