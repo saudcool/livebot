@@ -1091,14 +1091,9 @@ loaded_state = load_state()
 if loaded_state:
     state = {**state, **loaded_state}
     # Convert date string back to date
-    if "last_reset_date" in state and isinstance(state["last_reset_date"], str):
-        state["last_reset_date"] = datetime.strptime(state["last_reset_date"], "%Y-%m-%d").date()
-
-# Ensure last_reset_date exists and is a date object
-if "last_reset_date" not in state or state["last_reset_date"] is None:
-    state["last_reset_date"] = datetime.utcnow().date()
-elif isinstance(state["last_reset_date"], str):
-    state["last_reset_date"] = datetime.strptime(state["last_reset_date"], "%Y-%m-%d").date()
+    for key in ["last_reset_date", "last_loss_time", "last_win_time", "last_entry_candle"]:
+        if key in state and isinstance(state[key], str):
+            state[key] = datetime.strptime(state[key], "%Y-%m-%d %H:%M:%S")
 else:
     state = state
 
