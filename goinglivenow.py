@@ -1108,7 +1108,7 @@ while True:
         if today != state["last_reset_date"]:
             state["daily_trades"] = 0
             state["daily_loss"] = 0.0
-            state["last_reset_date"] = today
+            state["last_reset_date"] = str(today)
             save_state(state)
 
         # Build market snapshot
