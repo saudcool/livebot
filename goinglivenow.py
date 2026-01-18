@@ -1089,12 +1089,16 @@ def fsm_step(state, market):
 loaded_state = load_state()
 
 if loaded_state:
-    # merge with defaults
     state = {**state, **loaded_state}
-    # convert date string back to date
-    for key in ["last_reset_date"]:
-      if key in state and isinstance(state[key], str):
-          state[key] = datetime.strptime(state[key], "%Y-%m-%d").date()
+    # Convert date string back to date
+    if "last_reset_date" in state and isinstance(state["last_reset_date"], str):
+        state["last_reset_date"] = datetime.strptime(state["last_reset_date"], "%Y-%m-%d").date()
+
+# Ensure last_reset_date exists and is a date object
+if "last_reset_date" not in state or state["last_reset_date"] is None:
+    state["last_reset_date"] = datetime.utcnow().date()
+elif isinstance(state["last_reset_date"], str):
+    state["last_reset_date"] = datetime.strptime(state["last_reset_date"], "%Y-%m-%d").date()
 else:
     state = state
 
@@ -1118,10 +1122,10 @@ while True:
         fsm_step(state, market)
         print(f"[FSM] State={state['fsm_state']} | Open={state['position_open']} | Trades={state['daily_trades']}")
 
-        # if now.weekday() == 6 and now.hour == 0 and now.minute <= 5:
-        #   if last_weekly_report != now.date():
-        #       send_weekly_report(pnl_log)
-        #       last_weekly_report = now.date()
+        if now.weekday() == 6 and now.hour == 0 and now.minute <= 5:
+          if last_weekly_report != now.date():
+              send_weekly_report(pnl_log)
+              last_weekly_report = now.date()
 
         time.sleep(1)
 
