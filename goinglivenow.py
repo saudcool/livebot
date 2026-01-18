@@ -7,8 +7,8 @@ Original file is located at
     https://colab.research.google.com/drive/19nJsvI_oaT_vE9VuPDcbwWnTxzoS2COy
 """
 
-#!pip install ta
-#!pip install python-okx
+# !pip install ta
+# !pip install python-okx
 
 # For My Mum — love you always and forever ❤️
 
@@ -698,7 +698,11 @@ def calculate_sl_tp(state, atr_value):
     if atr_value is None:
         return None, None
     sl_pct = atr_value
-    tp_pct = 3 * sl_pct     # RRR = 3:1
+    if atr_value >= 0.025
+      tp_pct = 2 * sl_pct
+    else:
+      tp_pct = 3 * sl_pct
+
     try:
       if state["side"] == 'buy':
           sl, tp =state["entry_price"]*(1-sl_pct),state["entry_price"]*(1+tp_pct)
