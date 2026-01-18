@@ -1108,7 +1108,7 @@ while True:
         if today != state["last_reset_date"]:
             state["daily_trades"] = 0
             state["daily_loss"] = 0.0
-            state["last_reset_date"] = str(today)
+            state["last_reset_date"] = today
             save_state(state)
 
         # Build market snapshot
@@ -1118,10 +1118,10 @@ while True:
         fsm_step(state, market)
         print(f"[FSM] State={state['fsm_state']} | Open={state['position_open']} | Trades={state['daily_trades']}")
 
-        if now.weekday() == 6 and now.hour == 0 and now.minute <= 5:
-          if last_weekly_report != now.date():
-              send_weekly_report(pnl_log)
-              last_weekly_report = now.date()
+        # if now.weekday() == 6 and now.hour == 0 and now.minute <= 5:
+        #   if last_weekly_report != now.date():
+        #       send_weekly_report(pnl_log)
+        #       last_weekly_report = now.date()
 
         time.sleep(1)
 
