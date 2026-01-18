@@ -1091,9 +1091,12 @@ loaded_state = load_state()
 if loaded_state:
     state = {**state, **loaded_state}
     # Convert date string back to date
-    for key in ["last_reset_date", "last_loss_time", "last_win_time", "last_entry_candle"]:
+    for key in ["last_loss_time", "last_win_time", "last_entry_candle"]:
         if key in state and isinstance(state[key], str):
             state[key] = datetime.strptime(state[key], "%Y-%m-%d %H:%M:%S")
+    for key in ["last_reset_date"]:
+        if key in state and isinstance(state[key], str):
+            state[key] = datetime.strptime(state[key], "%Y-%m-%d")
 else:
     state = state
 
