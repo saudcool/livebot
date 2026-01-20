@@ -302,7 +302,7 @@ def adx(symbol="DOT-USDT-SWAP", limit=300, bar="1H"):
     if df.empty:
         return pd.DataFrame(), pd.Series(dtype=float)
 
-    return df["adx_14"].iloc[-1], df["di_plus"].iloc[-1], df["di_minus"].iloc[-1]
+    return df["adx_14"].iloc[-1], df["di_plus"].iloc[-1], df["di_minus"].iloc[-1], df["adx_14"].iloc[-2]
 
 # /content/drive/MyDrive/Scalers/scaler_X_1H_live.pkl
 
@@ -819,6 +819,7 @@ def check_close_condition(current_price, state, atr_value):
             return True
         elif current_price <= sl:
             SL_long()
+            state["di_flip_count"] = 0
             pnl = (sl -state["entry_price"])/state["entry_price"]
             pnl_log.loc[len(pnl_log)] = [datetime.utcnow(), state["side"],state["entry_price"], sl, pnl]
             state["daily_loss"] += max(0,-pnl)
@@ -828,9 +829,13 @@ def check_close_condition(current_price, state, atr_value):
             save_state(state)
             return True
 
-        elif market['di_minus'] > market['di_plus']:
-            SL_long()
-            time.sleep(1)
+        elif market['di_minus'] > market['di_plus'] and market["adx"] >= 22 and market["adx_prev"] > market["adx"]:
+            state["di_flip_count"] += 1
+            save_state(state)
+            if (state["di_flip_count"] >= 3):
+              SL_long()
+              state["di_flip_count"] = 0
+              time.sleep(1)
             state["exit_price"] = get_exit_price()
             if state["exit_price"] is None:
                 return False
@@ -852,6 +857,7 @@ def check_close_condition(current_price, state, atr_value):
     elif state["side"]== "sell":
         if current_price <= tp:
             TP_short()
+            state["di_flip_count"] = 0
             pnl = (state["entry_price"] - tp)/state["entry_price"]
             pnl_log.loc[len(pnl_log)] = [datetime.utcnow(), state["side"],state["entry_price"], tp, pnl]
             save_pnl_log()
@@ -861,6 +867,7 @@ def check_close_condition(current_price, state, atr_value):
             return True
         elif current_price >= sl:
             SL_short()
+            state["di_flip_count"] = 0
             pnl = (state["entry_price"] - sl)/state["entry_price"]
             pnl_log.loc[len(pnl_log)] = [datetime.utcnow(), state["side"], state["entry_price"], sl, pnl]
             state["daily_loss"] += max(0,-pnl)
@@ -870,9 +877,14 @@ def check_close_condition(current_price, state, atr_value):
             save_state(state)
             return True
 
-        elif market['di_plus'] > market['di_minus']:
-            SL_short()
-            time.sleep(1)
+        elif market['di_plus'] > market['di_minus'] and market["adx"] >= 22 and market["adx_prev"] > market["adx"]:
+
+            state["di_flip_count"] += 1
+            save_state(state)
+            if (state["di_flip_count"] >= 3):
+              SL_short()
+              state["di_flip_count"] = 0
+              time.sleep(1)
             state["exit_price"] = get_exit_price()
             if state["exit_price"] is None:
                 return False
@@ -929,6 +941,7 @@ state = {
     "last_win_time": None,
     "last_loss_time": None,
     "last_trade_side": None,
+    "di_flip_count": 0,
     "version": 1
 }
 
@@ -1004,10 +1017,11 @@ def build_market_context():
         pass
 
     #ADX Logic
-    adx_val, di_plus, di_minus = adx()
+    adx_val, di_plus, di_minus, adx_prev = adx()
     market["adx"] = adx_val
     market["di_plus"] = di_plus
     market["di_minus"] = di_minus
+    market["adx_prev"] = adx_prev
     market["rsi"] = rsi()
 
 
@@ -1217,3 +1231,4 @@ while True:
     except Exception as e:
         print("Loop error:", e)
         time.sleep(5)
+
