@@ -152,6 +152,76 @@ def preprocess(symbol="DOT-USDT-SWAP", limit=300, bar="1H"):
 
     return df, df['atr_tv']
 
+
+
+# ---------- UPDATED preprocess() ----------
+
+
+def rsi(symbol="DOT-USDT-SWAP", limit=300, bar="1H"):
+    """
+    Returns: df (processed), atr_series (ewm atr)
+    """
+    url = "https://www.okx.com/api/v5/market/candles"
+    params = {
+        "instId": symbol,
+        "bar": bar,
+        "limit": str(limit)
+    }
+    global close, high, low
+    try:
+        r = safe_get(url, params=params, timeout=10)
+    except Exception as e:
+        print(f"[ERROR] Failed to fetch candles: {e}")
+        return pd.DataFrame(), pd.Series(dtype=float)
+
+    try:
+        payload = r.json()
+    except ValueError as e:
+        print("[ERROR] Response JSON decode failed:", e)
+        return pd.DataFrame(), pd.Series(dtype=float)
+
+    if 'data' not in payload:
+        print("[ERROR] Unexpected API response, 'data' missing.")
+        return pd.DataFrame(), pd.Series(dtype=float)
+
+    data = payload['data']
+    if not data:
+        print("[WARN] OKX returned empty data.")
+        return pd.DataFrame(), pd.Series(dtype=float)
+
+    # Columns: [ts, o, h, l, c, vol, volCcy, volCcyQuote, confirm]
+    df = pd.DataFrame(data, columns=[
+        "ts","open","high","low","close","volume","volCcy","volCcyQuote","confirm"
+    ])
+
+    # Some APIs return string timestamps; OKX can return ISO or ms — we assume ms if numeric
+    try:
+        # if ts looks numeric (ms), convert
+        if df['ts'].dtype == object and df['ts'].str.isnumeric().all():
+            df["ts"] = pd.to_datetime(df["ts"].astype(int), unit="ms")
+        else:
+            df["ts"] = pd.to_datetime(df["ts"])
+    except Exception:
+        # fallback to generic parse
+        df["ts"] = pd.to_datetime(df["ts"], errors='coerce')
+
+    df = df.astype({
+        "open": float, "high": float, "low": float, "close": float, "volume": float
+    }, errors='ignore')
+
+    # feature engineering
+    df = df.sort_values("ts").reset_index(drop=True)
+
+    df["rsi_14"] = ta.momentum.RSIIndicator(df["close"], window=14).rsi().fillna(0)
+
+    # Drop rows with NaN that matter (e.g., missing indicators)
+    df = df.dropna().reset_index(drop=True)
+
+    if df.empty:
+        return pd.DataFrame(), pd.Series(dtype=float)
+
+    return df['rsi_14'].iloc[-1]
+
 def adx(symbol="DOT-USDT-SWAP", limit=300, bar="1H"):
     """
     Returns: df (processed), atr_series (ewm atr)
@@ -938,6 +1008,7 @@ def build_market_context():
     market["adx"] = adx_val
     market["di_plus"] = di_plus
     market["di_minus"] = di_minus
+    market["rsi"] = rsi()
 
 
     market["price"], market["atr"] = get_current_price()
@@ -1006,8 +1077,8 @@ def fsm_flat(state, market):
 
     market_ok = market["adx"] >= 22
 
-    long_allowed = (market_ok and market["di_plus"] > market["di_minus"])
-    short_allowed = (market_ok and market["di_minus"] > market["di_plus"])
+    long_allowed = (market_ok and market["di_plus"] > market["di_minus"] and market["rsi"] < 65)
+    short_allowed = (market_ok and market["di_minus"] > market["di_plus"] and market["rsi"] > 35)
 
     if market["adx"] is None or market["di_plus"] is None or market["di_minus"] is None:
         return
