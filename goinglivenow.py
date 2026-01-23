@@ -61,7 +61,7 @@ def safe_get(url, params=None, timeout=10):
 # ---------- UPDATED preprocess() ----------
 
 
-def preprocess(symbol="DOT-USDT-SWAP", limit=300, bar="1H"):
+def preprocess(symbol="DASH-USDT-SWAP", limit=300, bar="1H"):
     """
     Returns: df (processed), atr_series (ewm atr)
     """
@@ -157,7 +157,7 @@ def preprocess(symbol="DOT-USDT-SWAP", limit=300, bar="1H"):
 # ---------- UPDATED preprocess() ----------
 
 
-def rsi(symbol="DOT-USDT-SWAP", limit=300, bar="1H"):
+def rsi(symbol="DASH-USDT-SWAP", limit=300, bar="1H"):
     """
     Returns: df (processed), atr_series (ewm atr)
     """
@@ -222,7 +222,7 @@ def rsi(symbol="DOT-USDT-SWAP", limit=300, bar="1H"):
 
     return df['rsi_14'].iloc[-1]
 
-def adx(symbol="DOT-USDT-SWAP", limit=300, bar="1H"):
+def adx(symbol="DASH-USDT-SWAP", limit=300, bar="1H"):
     """
     Returns: df (processed), atr_series (ewm atr)
     """
@@ -304,120 +304,9 @@ def adx(symbol="DOT-USDT-SWAP", limit=300, bar="1H"):
 
     return df["adx_14"].iloc[-1], df["di_plus"].iloc[-1], df["di_minus"].iloc[-1], df["adx_14"].iloc[-2]
 
-# /content/drive/MyDrive/Scalers/scaler_X_1H_live.pkl
-
-
-def live_tensor(df, scaler_path="/home/ubuntu/livebot/scaler_X_1H.pkl"):
-    features = ["close", "price_change", "vwap", "ret_1", "ret_5",
-                "ma_5", "ma_10", "rsi_14", "vol_10", "atr_norm"]
-
-    if df.empty:
-        raise ValueError("Empty DataFrame passed to live_tensor")
-
-    try:
-        scaler_X = joblib.load(scaler_path)
-    except Exception as e:
-        raise RuntimeError(f"Failed to load scaler at {scaler_path}: {e}")
-
-    X_live = scaler_X.transform(df[features])
-    x_live_tensor = torch.tensor(X_live, dtype=torch.float32)
-    return x_live_tensor
-
-import torch
-import torch.nn as nn
-
-class GRUModel(nn.Module):
-    def __init__(self, input_size, hidden_size=128, num_layers=2, dropout=0.2):
-        super(GRUModel, self).__init__()
-        self.hidden_size = hidden_size
-        self.num_layers = num_layers
-
-        self.gru = nn.GRU(
-            input_size=input_size,
-            hidden_size=hidden_size,
-            num_layers=num_layers,
-            dropout=dropout,
-            batch_first=True
-        )
-
-        self.fc = nn.Sequential(
-            nn.LayerNorm(hidden_size),
-            nn.Dropout(0.2),
-            nn.Linear(hidden_size, hidden_size // 2),
-            nn.ReLU(inplace=True),
-            nn.Linear(hidden_size // 2, hidden_size // 4),   # NEW intermediate layer
-            nn.GELU(),
-            nn.Dropout(0.1),
-            nn.Linear(hidden_size // 4, 1)
-        )
-
-
-    def forward(self, x, h0=None):
-        if h0 is None:
-            h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size)
-        out, h = self.gru(x, h0.detach())
-        out = out[:, -1, :]
-        out = self.fc(out)
-        return out, h
 
 
 
-
-model = GRUModel(input_size = 10)
-
-
-
-model.load_state_dict(
-    torch.load("/home/ubuntu/livebot/0.503_acc_60.pth", map_location="cpu"),
-    strict=False
-)
-# model.load_state_dict(
-#     torch.load("/content/drive/MyDrive/Model_holder/0.503_acc_60.pth", map_location="cpu"),
-#     strict=False
-# )
-
-
-
-import torch
-
-
-model.eval()
-
-def predict_next(seq_len=60):
-    df, atr = preprocess(limit=300)
-    if df.empty:
-        print("[WARN] preprocess returned empty df. Can't predict.")
-        return None
-
-    try:
-        x_live_tensor = live_tensor(df)
-    except Exception as e:
-        print(f"[ERROR] live_tensor failed: {e}")
-        return None
-
-    # ensure we have enough rows
-    if x_live_tensor.size(0) < seq_len:
-        # pad by repeating first row (or better: repeat earliest rows) to reach seq_len
-        pad_needed = seq_len - x_live_tensor.size(0)
-        pad = x_live_tensor[0].unsqueeze(0).repeat(pad_needed, 1)
-        last_seq = torch.cat([pad, x_live_tensor], dim=0)[-seq_len:]
-    else:
-        last_seq = x_live_tensor[-seq_len:]
-
-    last_seq = last_seq.unsqueeze(0)  # shape: (1, seq_len, features)
-    with torch.no_grad():
-        logits, _ = model(last_seq)
-        logits = logits.squeeze()
-        probs = torch.sigmoid(logits)
-        # preds = (probs >= 0.6).int()
-
-        if probs >= 0.55:
-          preds = 1  # Long
-        elif probs <= 0.48:
-          preds = 0  # Short
-        else:
-          preds = -1
-        return preds
 
 api_key = "b42b7be0-bdeb-4dbd-b9e5-4f8b170bba38"
 api_secret = "B0A7FADE10CD6FBA03C5BD49A7CB312B"
@@ -543,7 +432,7 @@ def position_exists(retries=1, delay=1):
 def place_paper_trade(side):
     try:
         tradeAPI.place_order(
-            instId='DOT-USDT-SWAP',
+            instId='DASH-USDT-SWAP',
             tdMode='isolated',
             side= side,
             ordType='market',
@@ -660,7 +549,7 @@ def TP_long(side = "sell"):
 
   try:
         tradeAPI.place_order(
-            instId='DOT-USDT-SWAP',
+            instId='DASH-USDT-SWAP',
             tdMode='isolated',
             side=side,
             ordType='market',
@@ -686,7 +575,7 @@ def SL_long(side = "sell"):
 
   try:
         tradeAPI.place_order(
-            instId='DOT-USDT-SWAP',
+            instId='DASH-USDT-SWAP',
             tdMode='isolated',
             side=side,
             ordType='market',
@@ -712,7 +601,7 @@ def TP_short(side = "buy"):
 
   try:
         tradeAPI.place_order(
-            instId='DOT-USDT-SWAP',
+            instId='DASH-USDT-SWAP',
             tdMode='isolated',
             side=side,
             ordType='market',
@@ -738,7 +627,7 @@ def SL_short(side = "buy"):
 
   try:
         tradeAPI.place_order(
-            instId='DOT-USDT-SWAP',
+            instId='DASH-USDT-SWAP',
             tdMode='isolated',
             side=side,
             ordType='market',
@@ -1008,13 +897,8 @@ def build_market_context():
         "now": now,
         "candle_close": (now.minute == 0 and now.second < 30),
         "candle_id": now.replace(minute=0, second=0, microsecond=0),
-        "prediction": None,
-    }
 
-    try:
-        market["prediction"] = predict_next()
-    except:
-        pass
+    }
 
     #ADX Logic
     adx_val, di_plus, di_minus, adx_prev = adx()
