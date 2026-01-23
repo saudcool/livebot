@@ -657,16 +657,16 @@ def calculate_sl_tp(state, atr_value):
     if atr_value is None:
         return None, None
     sl_pct = atr_value
-    if atr_value >= 0.025:
+    if atr_value >= 2:
       tp_pct = 2 * sl_pct
     else:
       tp_pct = 3 * sl_pct
 
     try:
       if state["side"] == 'buy':
-          sl, tp =state["entry_price"]*(1-sl_pct),state["entry_price"]*(1+tp_pct)
+          sl, tp =state["entry_price"] - sl_pct,state["entry_price"] + tp_pct
       else:
-          sl, tp =state["entry_price"]*(1+sl_pct),state["entry_price"]*(1-tp_pct)
+          sl, tp =state["entry_price"] + sl_pct,state["entry_price"] - tp_pct
     except TypeError:
       print("SL/TP error: entry_price is None. Skipping this iteration.")
       return None, None
