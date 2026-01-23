@@ -547,7 +547,7 @@ def place_paper_trade(side):
             tdMode='isolated',
             side= side,
             ordType='market',
-            sz='30'
+            sz=0.55
         )
 
         print(f"[INFO] Order sent: {side}")
@@ -664,7 +664,7 @@ def TP_long(side = "sell"):
             tdMode='isolated',
             side=side,
             ordType='market',
-            sz='30',
+            sz=0.55,
             reduceOnly=True
         )
         print("[INFO] TP order sent")
@@ -690,7 +690,7 @@ def SL_long(side = "sell"):
             tdMode='isolated',
             side=side,
             ordType='market',
-            sz='30',
+            sz=0.55,
             reduceOnly=True
         )
         print("[INFO] SL order sent")
@@ -716,7 +716,7 @@ def TP_short(side = "buy"):
             tdMode='isolated',
             side=side,
             ordType='market',
-            sz='30',
+            sz=0.55,
             reduceOnly=True
         )
         print("[INFO] TP order sent")
@@ -742,7 +742,7 @@ def SL_short(side = "buy"):
             tdMode='isolated',
             side=side,
             ordType='market',
-            sz='30',
+            sz=0.55,
             reduceOnly=True
         )
         print("[INFO] SL order sent")
