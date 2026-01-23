@@ -304,7 +304,10 @@ def adx(symbol="DASH-USDT-SWAP", limit=300, bar="1H"):
 
     return df["adx_14"].iloc[-1], df["di_plus"].iloc[-1], df["di_minus"].iloc[-1], df["adx_14"].iloc[-2]
 
-
+def pos_size():
+  position_value = 80 * 0.17
+  quantity = position_value / 70 * 5
+  return f"{quantity:.2f}"
 
 
 
@@ -436,7 +439,7 @@ def place_paper_trade(side):
             tdMode='isolated',
             side= side,
             ordType='market',
-            sz='60'
+            sz='100'
         )
 
         print(f"[INFO] Order sent: {side}")
@@ -553,7 +556,7 @@ def TP_long(side = "sell"):
             tdMode='isolated',
             side=side,
             ordType='market',
-            sz='60',
+            sz='100',
             reduceOnly=True
         )
         print("[INFO] TP order sent")
@@ -579,7 +582,7 @@ def SL_long(side = "sell"):
             tdMode='isolated',
             side=side,
             ordType='market',
-            sz='60',
+            sz='100',
             reduceOnly=True
         )
         print("[INFO] SL order sent")
@@ -605,7 +608,7 @@ def TP_short(side = "buy"):
             tdMode='isolated',
             side=side,
             ordType='market',
-            sz='60',
+            sz='100',
             reduceOnly=True
         )
         print("[INFO] TP order sent")
@@ -631,7 +634,7 @@ def SL_short(side = "buy"):
             tdMode='isolated',
             side=side,
             ordType='market',
-            sz='60',
+            sz='100',
             reduceOnly=True
         )
         print("[INFO] SL order sent")
