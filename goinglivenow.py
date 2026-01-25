@@ -858,6 +858,7 @@ LOSS_COOLDOWN_HOURS = 10
 DAILY_LOSS_LIMIT = 0.04
 last_weekly_report = None
 last_prediction = None
+side = None
 
 STATE_FILE = "/home/ubuntu/livebot/state.json"
 
