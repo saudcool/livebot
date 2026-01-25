@@ -854,7 +854,7 @@ MAX_TRADES_PER_DAY = 6
 
 SEQ_LEN = 60
 WIN_COOLDOWN_HOURS = 6
-LOSS_COOLDOWN_HOURS = 10
+LOSS_COOLDOWN_HOURS = 6
 DAILY_LOSS_LIMIT = 0.03
 last_weekly_report = None
 last_prediction = None
