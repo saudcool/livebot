@@ -657,7 +657,6 @@ def SL_short(side = "buy"):
 # ATR-BASED SL/TP
 # -----------------------------
 def calculate_sl_tp(state, atr_value, market):
-
     if atr_value is None:
         return None, None
     sl_pct = atr_value
@@ -682,7 +681,7 @@ def calculate_sl_tp(state, atr_value, market):
 # -----------------------------
 # CHECK TP/SL HIT
 # -----------------------------
-def check_close_condition(current_price, state, atr_value, market):
+def check_close_condition(current_price, state, atr_value):
     if atr_value is None:
       print(f"[WARN] ATR is None ")
       return False
@@ -694,7 +693,7 @@ def check_close_condition(current_price, state, atr_value, market):
     if state["entry_price"] is None:
       print(f"[WARN] Entry price is None")
       return False
-    #market = build_market_context()
+    market = build_market_context()
     sl, tp = calculate_sl_tp(state, atr_value, market)
 
     global pnl_log
@@ -962,7 +961,7 @@ def fsm_in_trade(state, market):
         price,
         state,
         atr,
-        market
+
     )
 
 
