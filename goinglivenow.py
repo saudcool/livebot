@@ -657,6 +657,7 @@ def SL_short(side = "buy"):
 # ATR-BASED SL/TP
 # -----------------------------
 def calculate_sl_tp(state, atr_value, market):
+
     if atr_value is None:
         return None, None
     sl_pct = atr_value
@@ -681,7 +682,7 @@ def calculate_sl_tp(state, atr_value, market):
 # -----------------------------
 # CHECK TP/SL HIT
 # -----------------------------
-def check_close_condition(current_price, state, atr_value):
+def check_close_condition(current_price, state, atr_value, market):
     if atr_value is None:
       print(f"[WARN] ATR is None ")
       return False
@@ -693,7 +694,7 @@ def check_close_condition(current_price, state, atr_value):
     if state["entry_price"] is None:
       print(f"[WARN] Entry price is None")
       return False
-    market = build_market_context()
+    #market = build_market_context()
     sl, tp = calculate_sl_tp(state, atr_value, market)
 
     global pnl_log
@@ -859,6 +860,7 @@ DAILY_LOSS_LIMIT = 0.03
 last_weekly_report = None
 last_prediction = None
 side = None
+sl_pct, tp_pct = None, None
 
 STATE_FILE = "/home/ubuntu/livebot/state.json"
 
@@ -959,7 +961,8 @@ def fsm_in_trade(state, market):
     exit_reason = check_close_condition(
         price,
         state,
-        atr
+        atr,
+        market
     )
 
 
