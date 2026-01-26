@@ -16,6 +16,10 @@ api_secret = os.getenv("OKX_API_SECRET")
 passphrase = os.getenv("OKX_API_PASSPHRASE")
 SYMBOL = os.getenv("SYMBOL")
 POS_SIZE = os.getenv("POS_SIZE")
+BOT_NAME = os.getenv("BOT_NAME", "default")
+STATE_FILE = f"/home/ubuntu/livebot/state_{BOT_NAME}.json"
+
+
 
 print(
     f"Starting bot | {SYMBOL} | "
@@ -861,7 +865,7 @@ last_prediction = None
 side = None
 sl_pct, tp_pct = None, None
 
-STATE_FILE = "/home/ubuntu/livebot/state.json"
+
 
 import os, json, tempfile
 
