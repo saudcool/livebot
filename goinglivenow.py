@@ -987,13 +987,13 @@ def fsm_flat(state, market):
     now = market["now"]
 
     market_ok = market["adx"] >= 22
-    mean_rev = market["adx"] <= 18
+    # mean_rev = market["adx"] <= 18
 
     long_allowed = (market_ok and market["di_plus"] > market["di_minus"] and market["rsi"] < 65)
     short_allowed = (market_ok and market["di_minus"] > market["di_plus"] and market["rsi"] > 35)
 
-    mean_long_allowed = (mean_rev and market["di_plus"] > market["di_minus"] and market["rsi"] < 65)
-    mean_short_allowed = (mean_rev and market["di_minus"] > market["di_plus"] and market["rsi"] > 35)
+    # mean_long_allowed = (mean_rev and market["di_plus"] > market["di_minus"] and market["rsi"] < 65)
+    # mean_short_allowed = (mean_rev and market["di_minus"] > market["di_plus"] and market["rsi"] > 35)
 
     if market["adx"] is None or market["di_plus"] is None or market["di_minus"] is None:
         return
@@ -1022,9 +1022,9 @@ def fsm_flat(state, market):
 
     # decide side
 
-    if long_allowed or mean_long_allowed:
+    if long_allowed:
         side = "buy"
-    elif short_allowed or mean_short_allowed:
+    elif short_allowed:
         side = "sell"
 
 
