@@ -668,7 +668,9 @@ def calculate_sl_tp(state, atr_value, market):
     if market["adx"] <= 18:
       tp_pct = sl_pct
     elif market["adx"] <= 20:
-      tp_pct = sl_pct * 1.2
+      tp_pct = sl_pct * 1.5
+    elif market["adx"] >= 40:
+      tp_pct = sl_pct * 4
     else:
       tp_pct = 3 * sl_pct
 
