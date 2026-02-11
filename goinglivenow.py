@@ -663,7 +663,7 @@ def SL_short(side = "buy"):
 def calculate_sl_tp(state, atr_value, market):
     if atr_value is None:
         return None, None
-    sl_pct = atr_value
+    sl_pct = atr_value * 1.5
 
     if market["adx"] <= 18:
       tp_pct = sl_pct
