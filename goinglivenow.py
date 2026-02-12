@@ -43,6 +43,7 @@ import time
 from datetime import datetime, timedelta
 from okx import Trade
 import okx.Account as Account
+from ta.trend import SMAIndicator
 
 def create_session(total_retries=5, backoff_factor=0.5, status_forcelist=(429, 500, 502, 503, 504)):
     session = requests.Session()
@@ -235,7 +236,7 @@ def rsi(symbol=SYMBOL, limit=300, bar="1H"):
 
     return df['rsi_14'].iloc[-1]
 
-def adx(symbol=SYMBOL, limit=300, bar="1H"):
+def adx_ma_close(symbol=SYMBOL, limit=300, bar="1H"):
     """
     Returns: df (processed), atr_series (ewm atr)
     """
@@ -301,13 +302,12 @@ def adx(symbol=SYMBOL, limit=300, bar="1H"):
     df["di_plus"] = adx.adx_pos().fillna(0)
     df["di_minus"] = adx.adx_neg().fillna(0)
 
+    sma = SMAIndicator(
+    close=df["close"],
+    window=200
+)
+    df["sma_200"] = sma.sma_indicator().fillna(0)
 
-    df['tr'] = np.maximum(df['high'] - df['low'],
-                         np.maximum(abs(df['high'] - df['close'].shift()),
-                                    abs(df['low'] - df['close'].shift())))
-    df['atr'] = df['tr'].rolling(window=14).mean()
-    df["atr_norm"] = df["atr"] / df["close"].replace(0, np.nan)
-    df['atr_tv'] = df['tr'].ewm(alpha=1/14, adjust=False).mean()
 
     # Drop rows with NaN that matter (e.g., missing indicators)
     df = df.dropna().reset_index(drop=True)
@@ -315,7 +315,7 @@ def adx(symbol=SYMBOL, limit=300, bar="1H"):
     if df.empty:
         return pd.DataFrame(), pd.Series(dtype=float)
 
-    return df["adx_14"].iloc[-1], df["di_plus"].iloc[-1], df["di_minus"].iloc[-1], df["adx_14"].iloc[-2]
+    return df["adx_14"].iloc[-1], df["di_plus"].iloc[-1], df["di_minus"].iloc[-1], df["adx_14"].iloc[-2], df["sma_200"].iloc[-1], df["close"].iloc[-1]
 
 
 
@@ -915,11 +915,13 @@ def build_market_context():
     }
 
     #ADX Logic
-    adx_val, di_plus, di_minus, adx_prev = adx()
+    adx_val, di_plus, di_minus, adx_prev, sma, close = adx_ma_close()
+    market["sma"] = sma
     market["adx"] = adx_val
     market["di_plus"] = di_plus
     market["di_minus"] = di_minus
     market["adx_prev"] = adx_prev
+    market["close"] = close
     market["rsi"] = rsi()
 
 
@@ -991,8 +993,8 @@ def fsm_flat(state, market):
     market_ok = market["adx"] >= 22
     # mean_rev = market["adx"] <= 18
 
-    long_allowed = (market_ok and market["di_plus"] > market["di_minus"] and market["rsi"] < 65)
-    short_allowed = (market_ok and market["di_minus"] > market["di_plus"] and market["rsi"] > 35)
+    long_allowed = (market_ok and market["di_plus"] > market["di_minus"] and market["rsi"] < 65 and market["close"] > market["sma"])
+    short_allowed = (market_ok and market["di_minus"] > market["di_plus"] and market["rsi"] > 35 and market["close"] < market["sma"])
 
     # mean_long_allowed = (mean_rev and market["di_plus"] > market["di_minus"] and market["rsi"] < 65)
     # mean_short_allowed = (mean_rev and market["di_minus"] > market["di_plus"] and market["rsi"] > 35)
@@ -1133,4 +1135,3 @@ while True:
     except Exception as e:
         print("Loop error:", e)
         time.sleep(5)
-
