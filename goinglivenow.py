@@ -669,6 +669,10 @@ def calculate_sl_tp(state, atr_value, market):
       tp_pct = sl_pct
     elif market["adx"] <= 20:
       tp_pct = sl_pct * 1.5
+    elif market["adx"] >= 25:
+      tp_pct = sl_pct * 2
+    elif market["adx"] >= 30:
+      tp_pct = sl_pct * 3
     elif market["adx"] >= 40:
       tp_pct = sl_pct * 4
     else:
@@ -990,7 +994,7 @@ def fsm_in_trade(state, market):
 def fsm_flat(state, market):
     now = market["now"]
 
-    market_ok = market["adx"] >= 22
+    market_ok = market["adx"] > 25
     # mean_rev = market["adx"] <= 18
 
     long_allowed = (market_ok and market["di_plus"] > market["di_minus"] and market["rsi"] < 65 and market["close"] > market["sma"])
