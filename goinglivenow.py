@@ -18,6 +18,7 @@ SYMBOL = os.getenv("SYMBOL")
 POS_SIZE = os.getenv("POS_SIZE")
 BOT_NAME = os.getenv("BOT_NAME", "default")
 STATE_FILE = f"/home/ubuntu/livebot/state_{BOT_NAME}.json"
+side = None
 
 
 
@@ -669,12 +670,14 @@ def calculate_sl_tp(state, atr_value, market):
       tp_pct = sl_pct
     elif market["adx"] <= 20:
       tp_pct = sl_pct * 1.5
-    elif market["adx"] >= 25:
-      tp_pct = sl_pct * 2
-    elif market["adx"] >= 30:
-      tp_pct = sl_pct * 3
     elif market["adx"] >= 40:
       tp_pct = sl_pct * 4
+    elif market["adx"] >= 30:
+      tp_pct = sl_pct * 3
+    elif market["adx"] >= 25:
+      tp_pct = sl_pct * 2
+
+
     else:
       tp_pct = 3 * sl_pct
 
@@ -868,7 +871,6 @@ LOSS_COOLDOWN_HOURS = 6
 DAILY_LOSS_LIMIT = 0.03
 last_weekly_report = None
 last_prediction = None
-side = None
 sl_pct, tp_pct = None, None
 
 
