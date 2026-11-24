@@ -439,6 +439,7 @@ def place_trade(side):
         )
 
         print(f"[INFO] Order sent: {side}")
+        return True
 
     except Exception as e:
         print(f"[WARN] place_order exception: {e}")
@@ -475,10 +476,10 @@ def get_exit_price(retries = 3, delay = 1):
       print("[ERROR] All retries failed — returning None")
       return None
 
-# Email
-sender_email = "your_sender_email"
-receiver_email = "your_receiver_email"  # can be phone via carrier SMS-to-email
-app_password = "your_gmailapp_password"  # use Gmail App Password
+# Email settings (set these as environment variables, never hardcode them)
+SENDER_EMAIL = os.getenv("SENDER_EMAIL")
+RECEIVER_EMAIL = os.getenv("RECEIVER_EMAIL")  # can be phone via carrier SMS-to-email
+GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD")  # use Gmail App Password
 
 # -----------------------------
 # WEEKLY REPORT
@@ -512,20 +513,19 @@ def send_weekly_report(pnl_log):
     trades_detail = pnl_log.to_string(index=False)
     message_body = summary_stats + "Trades:\n" + trades_detail
 
-    # Email
-    sender_email = "mashoordada@gmail.com"
-    receiver_email = "saudrehan73@gmail.com"  # can be phone via carrier SMS-to-email
-    app_password = "inxe qmmg apau gqql"  # use Gmail App Password
+    if not (SENDER_EMAIL and RECEIVER_EMAIL and GMAIL_APP_PASSWORD):
+        print("[WARN] Email env vars not set (SENDER_EMAIL, RECEIVER_EMAIL, GMAIL_APP_PASSWORD) — skipping weekly report.")
+        return
 
     msg = MIMEMultipart()
-    msg['From'] = sender_email
-    msg['To'] = receiver_email
+    msg['From'] = SENDER_EMAIL
+    msg['To'] = RECEIVER_EMAIL
     msg['Subject'] = "Weekly Trading PnL Report"
     msg.attach(MIMEText(message_body, 'plain'))
 
     server = smtplib.SMTP('smtp.gmail.com', 587)
     server.starttls()
-    server.login(sender_email, app_password)
+    server.login(SENDER_EMAIL, GMAIL_APP_PASSWORD)
     server.send_message(msg)
     server.quit()
     print("Weekly PnL email sent!")
@@ -731,21 +731,22 @@ def check_close_condition(current_price, state, atr_value):
         elif market['di_minus'] > market['di_plus'] and market["adx"] >= 22 and market["adx_prev"] > market["adx"]:
             state["di_flip_count"] += 1
             save_state(state)
-            if (state["di_flip_count"] >= 3):
-              SL_long()
-              state["di_flip_count"] = 0
-              time.sleep(1)
+            # only exit after 3 confirmed flips
+            if state["di_flip_count"] < 3:
+                return False
+            SL_long()
+            state["di_flip_count"] = 0
+            time.sleep(1)
             state["exit_price"] = get_exit_price()
             if state["exit_price"] is None:
                 return False
-            if state["exit_price"] >= state["entry_price"]:
+            pnl = (state["exit_price"] - state["entry_price"])/state["entry_price"]
+            if pnl >= 0:
               state["last_win_time"] = datetime.utcnow()
-              pnl = (state["exit_price"] - state["entry_price"])/state["entry_price"]
             else:
               state["last_loss_time"] = datetime.utcnow()
-              pnl = (state["entry_price"] - state["exit_price"])/state["entry_price"]
 
-            pnl_log.loc[len(pnl_log)] = [datetime.utcnow(), state["side"],state["entry_price"], sl, pnl]
+            pnl_log.loc[len(pnl_log)] = [datetime.utcnow(), state["side"],state["entry_price"], state["exit_price"], pnl]
             state["daily_loss"] += max(0,-pnl)
             save_pnl_log()
             # state["last_loss_time"] = datetime.utcnow()
@@ -780,21 +781,22 @@ def check_close_condition(current_price, state, atr_value):
 
             state["di_flip_count"] += 1
             save_state(state)
-            if (state["di_flip_count"] >= 3):
-              SL_short()
-              state["di_flip_count"] = 0
-              time.sleep(1)
+            # only exit after 3 confirmed flips
+            if state["di_flip_count"] < 3:
+                return False
+            SL_short()
+            state["di_flip_count"] = 0
+            time.sleep(1)
             state["exit_price"] = get_exit_price()
             if state["exit_price"] is None:
                 return False
-            if state["exit_price"] <= state["entry_price"]:
+            pnl = (state["entry_price"] - state["exit_price"])/state["entry_price"]
+            if pnl >= 0:
               state["last_win_time"] = datetime.utcnow()
-              pnl = (state["entry_price"] - state["exit_price"])/state["entry_price"]
             else:
               state["last_loss_time"] = datetime.utcnow()
-              pnl = (state["exit_price"] - state["entry_price"])/state["entry_price"]
 
-            pnl_log.loc[len(pnl_log)] = [datetime.utcnow(), state["side"],state["entry_price"], sl, pnl]
+            pnl_log.loc[len(pnl_log)] = [datetime.utcnow(), state["side"],state["entry_price"], state["exit_price"], pnl]
             state["daily_loss"] += max(0,-pnl)
             save_pnl_log()
             # state["last_loss_time"] = datetime.utcnow()
@@ -1022,19 +1024,21 @@ def fsm_flat(state, market):
         return
 
     # decide side
-
+    side = None
     if long_allowed:
         side = "buy"
     elif short_allowed:
         side = "sell"
 
+    # no signal this candle
+    if side is None:
+        return
 
     # execute entry
-    if side is not None:
-      trade = place_trade(side)
-      time.sleep(1)
+    trade = place_trade(side)
+    time.sleep(1)
 
-    if trade == False:
+    if not trade:
       return
 
     entry_price = get_entry_price()
