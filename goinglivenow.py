@@ -994,9 +994,9 @@ def fsm_flat(state, market):
 
     long_allowed = (market_ok and market["di_plus"] > market["di_minus"] and market["rsi"] < 70 and market["close"] > market["sma"])
     short_allowed = (market_ok and market["di_minus"] > market["di_plus"] and market["rsi"] > 30 and market["close"] < market["sma"])
-
-    # mean_long_allowed = (mean_rev and market["di_plus"] > market["di_minus"] and market["rsi"] < 65)
-    # mean_short_allowed = (mean_rev and market["di_minus"] > market["di_plus"] and market["rsi"] > 35)
+    
+    mean_long_allowed = (mean_rev and market["di_plus"] > market["di_minus"] and market["rsi"] < 65)
+    mean_short_allowed = (mean_rev and market["di_minus"] > market["di_plus"] and market["rsi"] > 35)
 
     if market["adx"] is None or market["di_plus"] is None or market["di_minus"] is None:
         return
