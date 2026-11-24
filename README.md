@@ -94,6 +94,11 @@ Everything about the trade is set with environment variables:
 | `SYMBOL` | OKX instrument ID | `AVAX-USDT-SWAP` |
 | `POS_SIZE` | Order size in contracts | `1` |
 | `BOT_NAME` | Name used for the state file (default `default`) | `avax` |
+| `SENDER_EMAIL` | Gmail address the weekly report is sent from | `you@gmail.com` |
+| `RECEIVER_EMAIL` | Where the weekly report goes | `you@gmail.com` |
+| `GMAIL_APP_PASSWORD` | Gmail App Password for `SENDER_EMAIL` | |
+
+If any of the three email variables is missing, the bot keeps trading and just skips the weekly email.
 
 Example `.env` file (already ignored by `.gitignore`):
 
@@ -104,9 +109,12 @@ OKX_API_PASSPHRASE=xxxxxxxx
 SYMBOL=AVAX-USDT-SWAP
 POS_SIZE=1
 BOT_NAME=avax
+SENDER_EMAIL=you@gmail.com
+RECEIVER_EMAIL=you@gmail.com
+GMAIL_APP_PASSWORD=xxxxxxxxxxxxxxxx
 ```
 
-Email settings (sender, receiver, app password) are set inside `send_weekly_report()` in `goinglivenow.py`. Don't commit real credentials; load them from environment variables instead.
+Never commit real credentials to the repo; keep them in `.env` or your server's environment.
 
 ---
 
