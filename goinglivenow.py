@@ -319,13 +319,6 @@ def adx_ma_close(symbol=SYMBOL, limit=300, bar="1H"):
     return df["adx_14"].iloc[-1], df["di_plus"].iloc[-1], df["di_minus"].iloc[-1], df["adx_14"].iloc[-2], df["sma_200"].iloc[-1], df["close"].iloc[-1]
 
 
-
-# api_key = "ec77e8b7-083e-4581-8d73-2cbaab9335eb"
-# api_secret = "4ADE64A8ED6BB88715B64C7915AF5D6D"
-# passphrase = "Fathir2301762!"
-
-
-
 def get_account_bal(retries=2, delay=1):
     flag = "0"
 
