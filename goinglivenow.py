@@ -428,7 +428,7 @@ def position_exists(retries=1, delay=1):
     return False
 
 
-def place_paper_trade(side):
+def place_trade(side):
     try:
         tradeAPI.place_order(
             instId=SYMBOL,
@@ -1031,7 +1031,7 @@ def fsm_flat(state, market):
 
     # execute entry
     if side is not None:
-      trade = place_paper_trade(side)
+      trade = place_trade(side)
       time.sleep(1)
 
     if trade == False:
